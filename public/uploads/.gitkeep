@@ -1,0 +1,3 @@
+# Uploaded profile images
+/public/uploads/*
+!public/uploads/.gitkeep
