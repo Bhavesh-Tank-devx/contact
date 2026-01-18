@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { LogOut, User, Plus, Pencil, Trash2, Mail, Phone, Calendar } from "lucide-react"
+import { LogOut, User, Plus, Pencil, Trash2, Mail, Phone, Calendar, Users } from "lucide-react"
 import axios from "axios"
 import { ProtectedRoute } from "@/components/auth-wrappers"
 import { Button } from "@/components/ui/button"
@@ -39,7 +39,7 @@ interface Contact {
 function Home() {
   const router = useRouter()
   const { toast } = useToast()
-  const [user, setUser] = useState<{ username: string; email: string } | null>(null)
+  const [user, setUser] = useState<{ username: string; email: string; role?: string } | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -288,6 +288,18 @@ function Home() {
             <User className="h-4 w-4" />
             <span>Hello, {user?.username || user?.email || "User"}</span>
           </div>
+          
+          {user?.role === "superadmin" && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => router.push("/users")}
+            >
+              <Users className="h-4 w-4" />
+              Registered Users
+            </Button>
+          )}
           
           <Button 
             onClick={handleLogout}
