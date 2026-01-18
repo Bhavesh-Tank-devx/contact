@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Contact from '@/models/Contact';
+import User from '@/models/User';
 import { getUserFromRequest } from '@/lib/jwt';
 
 // GET /api/contacts/[id] - Get one contact
@@ -61,6 +62,17 @@ export async function PUT(
 
     await connectDB();
 
+    await connectDB();
+
+    // Verify user exists (prevent operations from deleted users with valid tokens)
+    const userExists = await User.findById(userPayload.userId);
+    if (!userExists) {
+      return NextResponse.json(
+        { error: 'User account no longer exists' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { name, email, phone, age, profileImage } = body;
@@ -117,6 +129,17 @@ export async function DELETE(
     }
 
     await connectDB();
+
+    await connectDB();
+
+    // Verify user exists (prevent operations from deleted users with valid tokens)
+    const userExists = await User.findById(userPayload.userId);
+    if (!userExists) {
+      return NextResponse.json(
+        { error: 'User account no longer exists' },
+        { status: 401 }
+      );
+    }
 
     const { id } = await params;
 

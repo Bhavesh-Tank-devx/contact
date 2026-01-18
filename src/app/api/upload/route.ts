@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import path from 'path';
+import connectDB from '@/lib/db';
+import User from '@/models/User';
 import { getUserFromRequest } from '@/lib/jwt';
 
 export async function POST(request: NextRequest) {
@@ -12,6 +12,15 @@ export async function POST(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    await connectDB();
+    const userExists = await User.findById(userPayload.userId);
+    if (!userExists) {
+        return NextResponse.json(
+            { error: 'User account no longer exists' },
+            { status: 401 }
+        );
     }
 
     const formData = await request.formData();
@@ -44,21 +53,10 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const extension = file.name.split('.').pop();
-    const filename = `${timestamp}-${randomString}.${extension}`;
-
-    // Save to public/uploads directory
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    const filepath = path.join(uploadDir, filename);
-
-    await writeFile(filepath, buffer);
-
-    // Return the public URL
-    const imageUrl = `/uploads/${filename}`;
+    const base64String = buffer.toString('base64');
+    
+    // Create Data URI
+    const imageUrl = `data:${file.type};base64,${base64String}`;
 
     return NextResponse.json({ 
       success: true,

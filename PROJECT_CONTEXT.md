@@ -1,160 +1,95 @@
-# Contact Management App - Project Context & Architecture
+# Project Context & Architecture
 
-## 1. Project Overview
+## Overview
 
-- **Goal**: Full-stack Contact Management application.
-- **Tech Stack**:
-  - **Frontend**: Next.js 16 (App Router, TypeScript), Tailwind CSS, Shadcn UI, Lucide React icons.
-  - **Backend**: Next.js API Routes (Internal API), MongoDB (Mongoose ODM).
-  - **Authentication**: Custom JWT (JSON Web Tokens) implementation.
-  - **State Management**: React Hooks (`useState`, `useEffect`) + Context-like Auth pattern.
+This project is a full-stack **Contact Management Application** built using **Next.js 16 (App Router)**. It leverages a monolithic architecture where both the frontend UI and the backend API routes coexist within the same repository. The application focuses on data integrity, user security, and a fluid user experience.
 
-## 2. Backend Architecture
+## Technology Stack
 
-**Location**: `src/app/api`, `src/lib`, `src/models`
+- **Framework:** [Next.js 16](https://nextjs.org/) (React Framework)
+- **Language:** JavaScript/TypeScript
+- **Database:** MongoDB
+- **ORM:** Mongoose
+- **Styling:** Tailwind CSS
+- **UI Components:** Shadcn UI (Radix Primitives + Tailwind)
+- **Authentication:** Custom JWT (JSON Web Tokens)
+- **HTTP Client:** Axios
 
-### Database
+## System Architecture
 
-- **Technology**: MongoDB.
-- **Connection**: `src/lib/db.ts` - Singleton pattern for Mongoose connection handling (optimised for serverless/Next.js HMR).
-- **ODM**: Mongoose 9.x.
+### 1. Database Schema (MongoDB/Mongoose)
 
-### Data Models
+The data model consists of two primary collections:
 
-**Location**: `src/models`
+- **User Model (`src/models/User.ts`)**
+  - **Fields:** `username`, `email` (unique), `password` (hashed), `role` (default: 'member', admin: 'superadmin'), `profileImage`.
+  - **Relationships:** A User is the "Owner" of multiple Contacts.
+  - **Security:** Passwords are never returned in API responses.
 
-1.  **User** (`User.ts`)
-    - `username` (String, unique, required)
-    - `email` (String, unique, required)
-    - `password` (String, required - likely hashed)
-    - `role` (Enum: 'member', 'superadmin', default: 'member')
-    - `contacts` (Virtual field: One-to-Many relation with Contact)
+- **Contact Model (`src/models/Contact.ts`)**
+  - **Fields:** `name`, `email`, `phone`, `age`, `profileImage`, `owner`.
+  - **Relationships:** The `owner` field references a `User` ObjectId.
+  - **Constraint:** Contacts are strictly isolated by their `owner` (except for Superadmin access).
 
-2.  **Contact** (`Contact.ts`)
-    - `name` (String, required)
-    - `email` (String)
-    - `phone` (String, required)
-    - `age` (Number)
-    - `profileImage` (String - URL path)
-    - `owner` (ObjectId, Ref: 'User', required) - Links contact to specific user.
+### 2. API Layer (`src/app/api/...`)
 
-### API Routes
+The backend is implemented using Next.js Route Handlers.
 
-**Location**: `src/app/api`
+- **Authentication & Security (`src/lib/jwt.ts`)**
+  - Stateless authentication using JWTs stored in `localStorage` on the client.
+  - Middleware-like utility `getUserFromRequest` extracts and validates tokens from headers.
+  - **Role-Based Access Control (RBAC):** API endpoints explicitly check `userPayload.role === 'superadmin'` for sensitive operations (e.g., viewing all users, editing other users' data).
 
-- **Base URL**: `/api`
-- **Authentication**: Most routes are protected using `getUserFromRequest` helper (`src/lib/jwt.ts`).
-- **Endpoints**:
-  - `POST /api/auth/login`: Authenticates user, returns JWT and user info.
-  - `POST /api/auth/signup`: Registers new user, returns JWT.
-  - `GET /api/contacts`: Fetches contacts for the logged-in user (filtered by `owner`).
-  - `POST /api/contacts`: Creates a new contact linked to the logged-in user.
-  - `PUT /api/contacts/[id]`: Updates a specific contact (ensures ownership).
-  - `DELETE /api/contacts/[id]`: Deletes a specific contact (ensures ownership).
-  - `POST /api/upload`: Handles file uploads (images) to `public/uploads`, returns URL.
+- **Key Endpoints:**
+  - `/api/auth/register` & `/api/auth/login`: Handle user lifecycle.
+  - `/api/contacts`: CRUD for the logged-in user's personal contacts.
+  - `/api/contacts/[id]`: Operations on a specific contact (with ownership/admin verification).
+  - `/api/users`: Admin-only list of all users.
+  - `/api/users/[id]`: Admin-only user management (Update/Delete).
+  - `/api/profile`: Self-service profile management for the logged-in user.
+  - `/api/upload`: Handles image uploads to the local filesystem (`public/uploads`).
 
-### Security
+### 3. Frontend Architecture
 
-- **JWT**: Tokens signed/verified using `jsonwebtoken` library. Secret key from `process.env.JWT_SECRET`.
-- **Middleware-like Logic**: `getUserFromRequest` extracts and validates Bearer token from headers.
+The frontend is a Single Page Application (SPA) experience powered by Next.js.
 
-## 3. Frontend Architecture
+- **State Management:**
+  - Uses React `useState` and `useEffect` for local UI state and data fetching.
+  - `localStorage` is used to persist the user session (JWT and basic user info).
 
-**Location**: `src/app`, `src/components`
+- **Navigation & Routing:**
+  - `/`: Landing page / Home.
+  - `/login` & `/signup`: Auth pages (redirect to dashboard if already logged in).
+  - `/dashboard`: Main user interface for managing contacts.
+  - `/users`: Superadmin interface for managing the user base.
 
-### Core Features
+- **Component Design:**
+  - **Smart Components:** Pages (e.g., `UsersPage`) handle data fetching and orchestration.
+  - **Dumb/UI Components:** Reusable pieces like `Card`, `Button`, `Dialog` (mostly from Shadcn UI).
+  - **Feature Components:** High-level widgets like `UserProfileDialog` and `EditContactDialog` encapsulate complex logic (form handling, API calls, error states) to keep pages clean.
 
-- **Dashboard (`/`)**:
-  - Lists all user contacts.
-  - Search/Filter not explicitly seen but contacts fetched via API.
-  - Create/Edit/Delete/View Modals for contact management.
-- **Authentication Pages**:
-  - Login (`/login`)
-  - Signup (`/signup`)
-- **Private Routes**:
-  - Implementation: HOC/Wrapper pattern `ProtectedRoute` in `src/components/auth-wrappers.tsx`.
-  - Logic: Checks for `jwt` in `localStorage`. Redirects to `/login` if missing.
-- **Public Routes**:
-  - `PublicRoute` wrapper ensures authenticated users are redirected to Dashboard if they visit Login/Signup.
+## Workflows & Logic
 
-### Key Components
+### Authentication Flow
 
-- **Auth Wrappers** (`auth-wrappers.tsx`): Handles client-side route protection.
-- **UI Library**: Shadcn UI components (Dialog, Card, Button, Input, Toast) located in `src/components/ui`.
-- **Icons**: Lucide React.
-- **Forms**: React Hook Form + Zod validation.
+1.  User submits credentials.
+2.  Server validates and returns a JWT.
+3.  Client stores JWT in `localStorage`.
+4.  Subsequent Axios requests include `Authorization: Bearer <token>` header.
 
-### Data Flow
+### Data Privacy & Isolation
 
-1.  **Auth**: User logs in -> API returns JWT -> Client stores in `localStorage`.
-2.  **API Calls**: `axios` is used for HTTP requests. `Authorization: Bearer <token>` header added for protected routes.
-3.  **State**: Local state manages modal visibility (`isCreateOpen`, `isEditOpen`, etc.) and data (`contacts` array).
+- **Standard Operation:** When a generic user requests `/api/contacts`, the server queries MongoDB for contacts where `owner == currentUserId`.
+- **Admin Override:** If the requester is a `superadmin`, specific endpoints allow bypassing this check to manage data globally.
 
-## 4. Environment Variables
+### Deletion Logic (Cascading Delete)
 
-Required `.env` or `.env.local` variables:
+To maintain database hygiene:
 
-- `MONGODB_URI`: Connection string for MongoDB.
-- `JWT_SECRET`: Secret key for token signing.
+- **Deleting a User:** When a user is deleted (either by themselves or an admin), the backend _first_ deletes all `Contact` documents where `owner == userId`, _then_ deletes the `User` document. This prevents "orphaned" data.
 
-## 5. Current Status
+### Security Measures
 
-- [x] Database Connection (MongoDB)
-- [x] Authentication (Login/Signup/JWT)
-- [x] CRUD Operations for Contacts
-- [x] Image Upload (Local Filesystem)
-- [x] Client-side Route Protection
-- [x] Responsive UI with Tailwind & Shadcn
-
-# Next.js Project Context
-
-## Project Initialization
-
-**Date**: 2026-01-17
-
-### 1. Initial Setup
-
-Executed `create-next-app` to scaffold the project:
-
-```bash
-npx create-next-app@latest nextjs-contact-app \
-  --typescript \
-  --tailwind \
-  --app \
-  --use-npm \
-  --no-eslint \
-  --src-dir \
-  --import-alias "@/*"
-```
-
-### 2. Dependencies
-
-Installed core libraries for forms, HTTP, and dates:
-
-```bash
-cd nextjs-contact-app
-npm install react-hook-form zod @hookform/resolvers axios date-fns
-npm install -D @types/node
-```
-
-### 3. UI Configuration (shadcn/ui)
-
-Initialized shadcn-ui for component styling:
-
-```bash
-npx shadcn@latest init
-```
-
-- **Base Color**: Neutral
-- **CSS Variables**: Enabled
-- **Components File**: `components.json`
-- **Utils**: `src/lib/utils.ts`
-
-### Current Stack Summary
-
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4, shadcn/ui
-- **Forms**: React Hook Form + Zod
-- **Data Fetching**: Axios
-- **Utils**: date-fns
+- **Input Validation:** Mongoose schemas enforce data types and requirements.
+- **Sanitization:** Passwords are excluded from query results (`.select('-password')`).
+- **Safe Writes:** Endpoints verify the existence of the user (even with a valid token) before allowing Creates/Updates/Deletes to prevent actions from stale sessions of deleted accounts.

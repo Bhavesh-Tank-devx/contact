@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Contact from '@/models/Contact';
+import User from '@/models/User';
 import { getUserFromRequest } from '@/lib/jwt';
 
 // GET /api/contacts - List contacts for logged-in user
@@ -42,6 +43,15 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB();
+
+    // Verify user exists (in case they were deleted by admin while logged in)
+    const userExists = await User.findById(userPayload.userId);
+    if (!userExists) {
+      return NextResponse.json(
+        { error: 'User account no longer exists' },
+        { status: 401 }
+      );
+    }
 
     const body = await request.json();
     const { name, email, phone, age, profileImage } = body;
