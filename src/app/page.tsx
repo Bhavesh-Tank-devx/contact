@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { LogOut, User, Plus, Pencil, Trash2, Mail, Phone, Calendar, Users } from "lucide-react"
+import { LogOut, User, Plus, Pencil, Trash2, Mail, Phone, Calendar, Users, TrendingUp, LayoutDashboard } from "lucide-react"
 import axios from "axios"
 import { ProtectedRoute } from "@/components/auth-wrappers"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { UserProfileDialog } from "@/components/user-profile-dialog"
 
 interface Contact {
   _id: string
@@ -39,7 +40,7 @@ interface Contact {
 function Home() {
   const router = useRouter()
   const { toast } = useToast()
-  const [user, setUser] = useState<{ username: string; email: string; role?: string } | null>(null)
+  const [user, setUser] = useState<{ username: string; email: string; role?: string; profileImage?: string } | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -277,6 +278,11 @@ function Home() {
     router.push("/login")
   }
 
+  const handleUserUpdated = (updatedUser: any) => {
+    setUser(updatedUser)
+    localStorage.setItem("user", JSON.stringify(updatedUser))
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation Bar */}
@@ -284,21 +290,28 @@ function Home() {
         <div className="font-bold text-xl text-primary">Contact App</div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
-            <User className="h-4 w-4" />
-            <span>Hello, {user?.username || user?.email || "User"}</span>
-          </div>
+           <UserProfileDialog user={user} onUserUpdated={handleUserUpdated} />
           
           {user?.role === "superadmin" && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              onClick={() => router.push("/users")}
-            >
-              <Users className="h-4 w-4" />
-              Registered Users
-            </Button>
+            <div className="flex gap-2">
+               <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => router.push("/users")}
+              >
+                <Users className="h-4 w-4" />
+                Users
+              </Button>
+                <Button 
+                size="sm" 
+                className="gap-2 bg-black text-white hover:bg-gray-800"
+                onClick={() => router.push("/dashboard")}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Button>
+            </div>
           )}
           
           <Button 

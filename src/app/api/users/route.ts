@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     if (userPayload.role !== 'superadmin') {
       return NextResponse.json(
-        { error: 'Forbidden: Superadmin access required' },
+        { error: 'You are not allowed to view this page.' },
         { status: 403 }
       );
     }

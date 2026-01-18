@@ -73,8 +73,13 @@ export async function PUT(
     if (age !== undefined) updateData.age = age;
     if (profileImage !== undefined) updateData.profileImage = profileImage;
 
+    // Query object - if superadmin, find by ID only. If member, find by ID and owner.
+    const query = userPayload.role === 'superadmin' 
+        ? { _id: id }
+        : { _id: id, owner: userPayload.userId };
+
     const contact = await Contact.findOneAndUpdate(
-      { _id: id, owner: userPayload.userId },
+      query,
       updateData,
       { new: true, runValidators: true }
     );
@@ -115,10 +120,12 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const contact = await Contact.findOneAndDelete({
-      _id: id,
-      owner: userPayload.userId,
-    });
+    // Query object - if superadmin, find by ID only. If member, find by ID and owner.
+    const query = userPayload.role === 'superadmin' 
+        ? { _id: id }
+        : { _id: id, owner: userPayload.userId };
+
+    const contact = await Contact.findOneAndDelete(query);
 
     if (!contact) {
       return NextResponse.json(

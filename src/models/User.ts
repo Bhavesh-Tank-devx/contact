@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: 'member' | 'superadmin';
+  profileImage?: string;
   createdAt: Date;
   updatedAt: Date;
   // Virtual field for contacts
@@ -34,6 +35,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ['member', 'superadmin'],
       default: 'member',
+    },
+    profileImage: {
+      type: String,
+      required: false,
     },
   },
   {
