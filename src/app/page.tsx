@@ -415,7 +415,7 @@ function Home() {
             <DialogHeader>
               <DialogTitle>Contact Details</DialogTitle>
             </DialogHeader>
-            {viewingContact && (
+              {viewingContact && (
               <div className="space-y-6">
                 {/* Profile Image */}
                 <div className="flex justify-center">
@@ -426,9 +426,25 @@ function Home() {
                       className="w-32 h-32 rounded-full object-cover border-4 border-gray-100"
                     />
                   ) : (
-                    <div className="w-32 h-32 rounded-full bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-bold border-4 border-gray-100">
-                      {viewingContact.name.charAt(0).toUpperCase()}
-                    </div>
+                    // Generate gradient immediately before use
+                    (() => {
+                      const gradients = [
+                        "from-pink-400 to-rose-500",
+                        "from-orange-400 to-amber-500",
+                        "from-green-400 to-emerald-500",
+                        "from-blue-400 to-indigo-500",
+                        "from-purple-400 to-violet-500",
+                        "from-teal-400 to-cyan-500"
+                      ]
+                      const gradientIndex = viewingContact.name.length % gradients.length
+                      const gradientClass = gradients[gradientIndex]
+                      
+                      return (
+                        <div className={`w-32 h-32 rounded-full bg-linear-to-br ${gradientClass} flex items-center justify-center text-white text-4xl font-bold border-4 border-gray-100`}>
+                          {viewingContact.name.charAt(0).toUpperCase()}
+                        </div>
+                      )
+                    })()
                   )}
                 </div>
 
@@ -577,7 +593,19 @@ function Home() {
           </div>
         ) : (
           <div className="max-w-2xl mx-auto space-y-3">
-            {contacts.map((contact) => (
+            {contacts.map((contact) => {
+              const gradients = [
+                  "from-pink-400 to-rose-500",
+                  "from-orange-400 to-amber-500",
+                  "from-green-400 to-emerald-500",
+                  "from-blue-400 to-indigo-500",
+                  "from-purple-400 to-violet-500",
+                  "from-teal-400 to-cyan-500"
+              ]
+              const gradientIndex = contact.name.length % gradients.length
+              const gradientClass = gradients[gradientIndex]
+
+              return (
               <Card 
                 key={contact._id} 
                 className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-blue-500"
@@ -593,7 +621,7 @@ function Home() {
                         className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-bold border-2 border-gray-200">
+                      <div className={`w-16 h-16 rounded-full bg-linear-to-br ${gradientClass} flex items-center justify-center text-white text-xl font-bold border-2 border-gray-200`}>
                         {contact.name.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -605,7 +633,7 @@ function Home() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
         )}
       </main>
